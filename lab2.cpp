@@ -8,7 +8,15 @@
 
 using namespace std;
 
-class Patient
+class DbItem
+{
+public:
+    DbItem() = default;
+    DbItem(const vector<char*>& cellPtrs){};
+    virtual void print() const {};
+};
+
+class Patient : public DbItem
 {
 public:
     Patient() = default;
@@ -19,7 +27,7 @@ public:
         surname = cellPtrs[2];
         pesel = cellPtrs[3];
     }
-    void print() const
+    void print() const override
     {
         cout << "Id: " << id << " Imię: " << name
             << " Nazwisko: " << surname << " Pesel: " << pesel << endl;
@@ -30,13 +38,26 @@ public:
     string pesel;
 };
 
-class Study
+class Study : public DbItem
 {
 public:
+    Study() = default;
+    Study(const vector<char*>& cellPtrs)
+    {
+        patient_id = *(cellPtrs[0]);
+        type = cellPtrs[1];
+        date = cellPtrs[2];
+        result = cellPtrs[3];
+    }
+    void print() const override
+    {
+        cout << "Patient id: " << patient_id << " Nazwa badania: " << type
+            << " Data: " << date << " Rezultat: " << result << endl;
+    }
    	SQLSMALLINT patient_id;
-    SQLCHAR type[20];
-    SQLCHAR date[20];
-    SQLCHAR result[20];
+    string type;
+    string date;
+    string result;
 };
 
 #ifdef DEBUG
@@ -79,11 +100,10 @@ public:
         freeResources();
     }
 
-    template <typename T>
-    vector<T> getQueryResult(const string& command, const vector<size_t>& cellSizes)
+    template <typename T = DbItem>
+    vector<T> executeQuery(const string& command, const vector<size_t>& cellSizes = {})
     {
         SQLLEN len;
-        Patient patient;
 
         retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
         checkError(retcode, "SQLAllocHandle(SQL_HANDLE_STMT)", hstmt, SQL_HANDLE_STMT);
@@ -99,74 +119,19 @@ public:
             checkError(retcode, "SQLBindCol()", hstmt, SQL_HANDLE_STMT);
         }
 
-
         vector<T> objects;
-        retcode = SQLFetch(hstmt);
-        while (retcode != SQL_NO_DATA)
+        if (!cellSizes.empty()) 
         {
-            T obj(cellPtrs);
-            objects.push_back(obj);
             retcode = SQLFetch(hstmt);
+            while (retcode != SQL_NO_DATA)
+            {
+                T obj(cellPtrs);
+                objects.push_back(obj);
+                retcode = SQLFetch(hstmt);
+            }
+            retcode = SQLFreeStmt(hstmt, SQL_DROP);
         }
-        retcode = SQLFreeStmt(hstmt, SQL_DROP);
         return objects;
-    }
-    void selectFromStudies()
-    {
-        SQLLEN len;
-        Study study;
-
-        retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
-        checkError(retcode, "SQLAllocHandle(SQL_HANDLE_STMT)", hstmt, SQL_HANDLE_STMT);
-
-        string command = "select * from studies";
-        retcode = SQLExecDirect(hstmt, (SQLCHAR *)command.c_str(), SQL_NTS);
-        checkError(retcode, "SQLExecDirect() SELECT", hstmt, SQL_HANDLE_STMT);
-
-        retcode = SQLBindCol(hstmt, 1, SQL_C_USHORT, &study.patient_id, 2, &len);
-        checkError(retcode, "SQLBindCol()", hstmt, SQL_HANDLE_STMT);
-
-        retcode = SQLBindCol(hstmt, 2, SQL_C_CHAR, &study.type, 20, &len);
-        checkError(retcode, "SQLBindCol()", hstmt, SQL_HANDLE_STMT);
-
-        retcode = SQLBindCol(hstmt, 3, SQL_C_CHAR, &study.date, 20, &len);
-        checkError(retcode, "SQLBindCol()", hstmt, SQL_HANDLE_STMT);
-
-        retcode = SQLBindCol(hstmt, 4, SQL_C_CHAR, &study.result, 20, &len);
-        checkError(retcode, "SQLBindCol()", hstmt, SQL_HANDLE_STMT);
-
-        retcode = SQLFetch(hstmt);
-        while (retcode != SQL_NO_DATA)
-        {
-            cout << "Patient id: " << study.patient_id << " Nazwa badania: " << study.type
-                << " Data: " << study.date << " Rezultat: " << study.result << endl;
-            retcode = SQLFetch(hstmt);
-        }
-        retcode = SQLFreeStmt(hstmt, SQL_DROP);
-    }
-    void insertPatient(Patient patient)
-    {
-        retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
-        checkError(retcode, "SQLAllocHandle(SQL_HANDLE_STMT)", hstmt, SQL_HANDLE_STMT);
-
-        string komenda = "INSERT INTO Patients (name, surname, pesel) VALUES ('"+patient.name+ "','" +patient.surname+"','"+patient.pesel+"');";
-        cout << "Komenda: " << komenda << endl;
-        retcode = SQLExecDirect(hstmt, (SQLCHAR *)komenda.c_str(), SQL_NTS);
-        checkError(retcode, "SQLExecDirect() INSERT", hstmt, SQL_HANDLE_STMT);
-
-        retcode = SQLFreeStmt(hstmt, SQL_DROP);
-    }
-    void insertStudy(Study study)
-    {
-        retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
-        checkError(retcode, "SQLAllocHandle(SQL_HANDLE_STMT)", hstmt, SQL_HANDLE_STMT);
-
-        string komenda = "INSERT INTO Studies (patient_id, type, date, result) VALUES ('"+to_string(study.patient_id)+"','"+string((char*)study.type)+"','"+string((char*)study.date)+"','"+string((char*)study.result)+"');";
-        cout << "Komenda: " << komenda << endl;
-        retcode = SQLExecDirect(hstmt, (SQLCHAR *)komenda.c_str(), SQL_NTS);
-        checkError(retcode, "SQLExecDirect() INSERT", hstmt, SQL_HANDLE_STMT);
-
-        retcode = SQLFreeStmt(hstmt, SQL_DROP);
     }
 private:
     SQLHENV henv;
@@ -259,16 +224,19 @@ int main()
             cin >> tablica;
             if (tablica == "Patients") {
                 Patient patient = createPatient();
-                db.insertPatient(patient);
+                string komenda = "INSERT INTO Patients (name, surname, pesel) VALUES ('"+patient.name+ "','" +patient.surname+"','"+patient.pesel+"');";
+                db.executeQuery<>(komenda);
             }
             else if (tablica == "Studies") {
                 Study study = createStudy();
-                db.insertStudy(study);
+                string komenda = "INSERT INTO Studies (patient_id, type, date, result) VALUES ('"+to_string(study.patient_id)+"','"+study.type+"','"+study.date+"','"+study.result+"');";
+                db.executeQuery<>(komenda);
             }
             else {
                 cout << "Nie podano prawidlowej tablicy więc wybrana zostaje tablica Patients" << endl;
                 Patient patient = createPatient();
-                db.insertPatient(patient);
+                string komenda = "INSERT INTO Patients (name, surname, pesel) VALUES ('"+patient.name+ "','" +patient.surname+"','"+patient.pesel+"');";
+                db.executeQuery<>(komenda);
             }
         }
         else if (option == 2)
@@ -277,14 +245,20 @@ int main()
             cout << "Podaj tablicę: ";
             cin >> tablica;
             if (tablica == "Patients") {
-                //db.selectFromPatients();
+                auto patients = db.executeQuery<Patient>("select * from patients", {sizeof(Patient::id), 20, 20, 12});
+                for (const auto& patient : patients) {
+                    patient.print();
+                }
             }
             else if (tablica == "Studies") {
-                db.selectFromStudies();
+                auto studies = db.executeQuery<Study>("select * from studies", {sizeof(Study::patient_id), 20, 20, 20});
+                for (const auto& study : studies) {
+                    study.print();
+                }
             }
             else {
                 cout << "Nie podano prawidlowej tablicy więc wybrana zostaje tablica Patients" << endl;
-                auto patients = db.getQueryResult<Patient>("select * from patients", {sizeof(Patient::id), 20, 20, 12});
+                auto patients = db.executeQuery<Patient>("select * from patients", {sizeof(Patient::id), 20, 20, 12});
                 for (const auto& patient : patients) {
                     patient.print();
                 }
