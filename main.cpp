@@ -239,6 +239,10 @@ int main()
     while (true)
     {
         char tabela;
+        // auto tabele = db.executeQuery<>("SELECT * FROM information_schema.tables", {128, 128, 128, 128, 128, 128, 128});
+        // for (const auto& study : tabele) {
+        //     study.print();
+        // }
         cout << "\nWybierz tabele:" << endl
             << "1 - Patients\n2 - Studies\n3 - Wyjdz" << endl;
         cin >> tabela;
