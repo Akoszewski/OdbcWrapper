@@ -211,53 +211,57 @@ Study createStudy()
     return study;
 }
 
+        // cout << "\nCo chcesz zrobic?" << endl
+        //      << "1 - Insert\n2 - Select\n3 - Wyjdz" << endl;
+        // cin >> option;
+
 int main()
 {
     DbManager db("Lab1 ODBC");
 
-    char option;
-    while (1)
+    while (true)
     {
-        cout << "\nCo chcesz zrobic?" << endl
-             << "1 - Insert\n2 - Select\n3 - Wyjdz" << endl;
-        cin >> option;
-        if (option == '1')
+        char tabela;
+        cout << "\nWybierz tabele:" << endl
+            << "1 - Patients\n2 - Studies\n3 - Wyjdz" << endl;
+        cin >> tabela;
+        if (tabela == '1')
         {
             while (true) {
-                char tabela;
-                cout << "\nWybierz tabele:" << endl
-                    << "1 - Patients\n2 - Studies\n3 - Powrot" << endl;
-                cin >> tabela;
-                if (tabela == '1') {
+                char option;
+                cout << "\nCo chcesz zrobic?" << endl
+                     << "1 - Insert\n2 - Select\n3 - Powrot" << endl;
+                cin >> option;
+                if (option == '1') {
                     Patient patient = createPatient();
                     string komenda = "INSERT INTO Patients (name, surname, pesel) VALUES ('"+patient.name+ "','" +patient.surname+"','"+patient.pesel+"');";
                     db.executeQuery<>(komenda);
                 }
-                else if (tabela == '2') {
-                    Study study = createStudy();
-                    string komenda = "INSERT INTO Studies (patient_id, type, date, result) VALUES ('"+to_string(study.patient_id)+"','"+study.type+"','"+study.date+"','"+study.result+"');";
-                    db.executeQuery<>(komenda);
+                else if (option == '2') {
+                    auto patients = db.executeQuery<Patient>("select * from patients", {sizeof(Patient::id), 20, 20, 12});
+                    for (const auto& patient : patients) {
+                        patient.print();
+                    }
                 }
                 else {
                     break;
                 }
             }
         }
-        else if (option == '2')
+        else if (tabela == '2')
         {
             while (true) {
-                char tabela;
-                cout << "\nWybierz tabele:" << endl
-                    << "1 - Patients\n2 - Studies\n3 - Powrot" << endl;
-                cin >> tabela;
-                if (tabela == '1') {
-                    auto patients = db.executeQuery<Patient>("select * from patients", {sizeof(Patient::id), 20, 20, 12});
-                    for (const auto& patient : patients) {
-                        patient.print();
-                    }
+                char option;
+                cout << "\nCo chcesz zrobic?" << endl
+                     << "1 - Insert\n2 - Select\n3 - Powrot" << endl;
+                cin >> option;
+                if (option == '1') {
+                    Study study = createStudy();
+                    string komenda = "INSERT INTO Studies (patient_id, type, date, result) VALUES ('"+to_string(study.patient_id)+"','"+study.type+"','"+study.date+"','"+study.result+"');";
+                    db.executeQuery<>(komenda);
                 }
-                else if (tabela == '2') {
-                    auto studies = db.executeQuery<Study>("select * from studies", {sizeof(Study::patient_id), 20, 20, 20});
+                else if (option == '2') {
+                    auto studies = db.executeQuery<Patient>("select * from Studies", {sizeof(Patient::id), 20, 20, 20});
                     for (const auto& study : studies) {
                         study.print();
                     }
