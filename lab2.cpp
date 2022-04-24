@@ -22,7 +22,7 @@ public:
     Patient() = default;
     Patient(const vector<char*>& cellPtrs)
     {
-        id = *(cellPtrs[0]);
+        id = atoi(const_cast<const char*>(cellPtrs[0]));
         name = cellPtrs[1];
         surname = cellPtrs[2];
         pesel = cellPtrs[3];
@@ -44,7 +44,7 @@ public:
     Study() = default;
     Study(const vector<char*>& cellPtrs)
     {
-        patient_id = *(cellPtrs[0]);
+        patient_id = atoi(const_cast<const char*>(cellPtrs[0]));
         type = cellPtrs[1];
         date = cellPtrs[2];
         result = cellPtrs[3];
