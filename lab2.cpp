@@ -5,7 +5,7 @@
 #include <vector>
 #include <list>
 
-#define DEBUG
+// #define DEBUG
 
 using namespace std;
 
@@ -215,56 +215,55 @@ int main()
 {
     DbManager db("Lab1 ODBC");
 
-    int option;
+    char option;
     while (1)
     {
-        cout << "Co chcesz zrobic?" << endl
+        cout << "\nCo chcesz zrobic?" << endl
              << "1 - Insert\n2 - Select\n3 - Wyjdz" << endl;
         cin >> option;
-        if (option == 1)
+        if (option == '1')
         {
-            string tablica;
-            cout << "Podaj tablicę: ";
-            cin >> tablica;
-            if (tablica == "Patients") {
-                Patient patient = createPatient();
-                string komenda = "INSERT INTO Patients (name, surname, pesel) VALUES ('"+patient.name+ "','" +patient.surname+"','"+patient.pesel+"');";
-                db.executeQuery<>(komenda);
-            }
-            else if (tablica == "Studies") {
-                Study study = createStudy();
-                string komenda = "INSERT INTO Studies (patient_id, type, date, result) VALUES ('"+to_string(study.patient_id)+"','"+study.type+"','"+study.date+"','"+study.result+"');";
-                db.executeQuery<>(komenda);
-            }
-            else {
-                cout << "Nie podano prawidlowej tablicy więc wybrana zostaje tablica Patients" << endl;
-                Patient patient = createPatient();
-                string komenda = "INSERT INTO Patients (name, surname, pesel) VALUES ('"+patient.name+ "','" +patient.surname+"','"+patient.pesel+"');";
-                db.executeQuery<>(komenda);
+            while (true) {
+                char tabela;
+                cout << "\nWybierz tabele:" << endl
+                    << "1 - Patients\n2 - Studies\n3 - Powrot" << endl;
+                cin >> tabela;
+                if (tabela == '1') {
+                    Patient patient = createPatient();
+                    string komenda = "INSERT INTO Patients (name, surname, pesel) VALUES ('"+patient.name+ "','" +patient.surname+"','"+patient.pesel+"');";
+                    db.executeQuery<>(komenda);
+                }
+                else if (tabela == '2') {
+                    Study study = createStudy();
+                    string komenda = "INSERT INTO Studies (patient_id, type, date, result) VALUES ('"+to_string(study.patient_id)+"','"+study.type+"','"+study.date+"','"+study.result+"');";
+                    db.executeQuery<>(komenda);
+                }
+                else {
+                    break;
+                }
             }
         }
-        else if (option == 2)
+        else if (option == '2')
         {
-            string tablica;
-            cout << "Podaj tablicę: ";
-            cin >> tablica;
-            if (tablica == "Patients") {
-                auto patients = db.executeQuery<Patient>("select * from patients", {sizeof(Patient::id), 20, 20, 12});
-                for (const auto& patient : patients) {
-                    patient.print();
+            while (true) {
+                char tabela;
+                cout << "\nWybierz tabele:" << endl
+                    << "1 - Patients\n2 - Studies\n3 - Powrot" << endl;
+                cin >> tabela;
+                if (tabela == '1') {
+                    auto patients = db.executeQuery<Patient>("select * from patients", {sizeof(Patient::id), 20, 20, 12});
+                    for (const auto& patient : patients) {
+                        patient.print();
+                    }
                 }
-            }
-            else if (tablica == "Studies") {
-                auto studies = db.executeQuery<Study>("select * from studies", {sizeof(Study::patient_id), 20, 20, 20});
-                for (const auto& study : studies) {
-                    study.print();
+                else if (tabela == '2') {
+                    auto studies = db.executeQuery<Study>("select * from studies", {sizeof(Study::patient_id), 20, 20, 20});
+                    for (const auto& study : studies) {
+                        study.print();
+                    }
                 }
-            }
-            else {
-                cout << "Nie podano prawidlowej tablicy więc wybrana zostaje tablica Patients" << endl;
-                auto patients = db.executeQuery<Patient>("select * from patients", {sizeof(Patient::id), 20, 20, 12});
-                for (const auto& patient : patients) {
-                    patient.print();
+                else {
+                    break;
                 }
             }
         }
