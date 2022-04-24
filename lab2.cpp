@@ -211,10 +211,6 @@ Study createStudy()
     return study;
 }
 
-        // cout << "\nCo chcesz zrobic?" << endl
-        //      << "1 - Insert\n2 - Select\n3 - Wyjdz" << endl;
-        // cin >> option;
-
 int main()
 {
     DbManager db("Lab1 ODBC");
@@ -261,7 +257,7 @@ int main()
                     db.executeQuery<>(komenda);
                 }
                 else if (option == '2') {
-                    auto studies = db.executeQuery<Patient>("select * from Studies", {sizeof(Patient::id), 20, 20, 20});
+                    auto studies = db.executeQuery<Study>("select * from Studies", {sizeof(Study::patient_id), 20, 20, 20});
                     for (const auto& study : studies) {
                         study.print();
                     }
