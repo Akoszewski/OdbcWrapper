@@ -14,7 +14,28 @@ class DbItem
 public:
     DbItem() = default;
     DbItem(const vector<char*>& cellPtrs){};
-    virtual void print() const {};
+    virtual void print() const = 0;
+};
+
+class StringRow : public DbItem
+{
+public:
+    StringRow() = default;
+    StringRow(const vector<char*>& cellPtrs)
+    {
+        for (const auto& cell : cellPtrs) {
+            data.push_back(cell);
+        }
+    }
+    void print() const override
+    {
+        for (const auto& cell : data) {
+            cout << cell;
+            cout << " ";
+        }
+        cout << endl;
+    }
+    vector<string> data;
 };
 
 class Patient : public DbItem
@@ -101,7 +122,7 @@ public:
         freeResources();
     }
 
-    template <typename T = DbItem>
+    template <typename T = StringRow>
     list<T> executeQuery(const string& command, const vector<size_t>& cellSizes = {})
     {
         SQLLEN len;
@@ -121,7 +142,7 @@ public:
         }
 
         list<T> objects;
-        if (!cellSizes.empty()) 
+        if (!cellSizes.empty())
         {
             retcode = SQLFetch(hstmt);
             while (retcode != SQL_NO_DATA)
