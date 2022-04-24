@@ -1,7 +1,8 @@
 #include <iostream>
 #include <sql.h>
 #include <sqlext.h>
-#include <string.h>
+#include <string>
+#include <vector>
 
 #define DEBUG
 
@@ -10,10 +11,23 @@ using namespace std;
 class Patient
 {
 public:
+    Patient() = default;
+    Patient(const vector<char*>& cellPtrs)
+    {
+        id = *(cellPtrs[0]);
+        name = cellPtrs[1];
+        surname = cellPtrs[2];
+        pesel = cellPtrs[3];
+    }
+    void print() const
+    {
+        cout << "Id: " << id << " Imię: " << name
+            << " Nazwisko: " << surname << " Pesel: " << pesel << endl;
+    }
     SQLSMALLINT id;
-    SQLCHAR name[20];
-    SQLCHAR surname[20];
-    SQLCHAR pesel[11];
+    string name;
+    string surname;
+    string pesel;
 };
 
 class Study
@@ -65,7 +79,8 @@ public:
         freeResources();
     }
 
-    void selectFromPatients()
+    template <typename T>
+    vector<T> getQueryResult(const string& command, const vector<size_t>& cellSizes)
     {
         SQLLEN len;
         Patient patient;
@@ -73,30 +88,28 @@ public:
         retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
         checkError(retcode, "SQLAllocHandle(SQL_HANDLE_STMT)", hstmt, SQL_HANDLE_STMT);
 
-        string command = "select * from patients";
         retcode = SQLExecDirect(hstmt, (SQLCHAR *)command.c_str(), SQL_NTS);
         checkError(retcode, "SQLExecDirect() SELECT", hstmt, SQL_HANDLE_STMT);
 
-        retcode = SQLBindCol(hstmt, 1, SQL_C_USHORT, &patient.id, 2, &len);
-        checkError(retcode, "SQLBindCol()", hstmt, SQL_HANDLE_STMT);
+        vector<char*> cellPtrs;
+        for (int i = 0; i < cellSizes.size(); ++i)
+        {
+            cellPtrs.push_back(new char[cellSizes[i]]);
+            retcode = SQLBindCol(hstmt, i+1, SQL_C_CHAR, cellPtrs[i], cellSizes[i], &len);
+            checkError(retcode, "SQLBindCol()", hstmt, SQL_HANDLE_STMT);
+        }
 
-        retcode = SQLBindCol(hstmt, 2, SQL_C_CHAR, &patient.name, 20, &len);
-        checkError(retcode, "SQLBindCol()", hstmt, SQL_HANDLE_STMT);
 
-        retcode = SQLBindCol(hstmt, 3, SQL_C_CHAR, &patient.surname, 20, &len);
-        checkError(retcode, "SQLBindCol()", hstmt, SQL_HANDLE_STMT);
-
-        retcode = SQLBindCol(hstmt, 4, SQL_C_CHAR, &patient.pesel, 11, &len);
-        checkError(retcode, "SQLBindCol()", hstmt, SQL_HANDLE_STMT);
-
+        vector<T> objects;
         retcode = SQLFetch(hstmt);
         while (retcode != SQL_NO_DATA)
         {
-            cout << "Id: " << patient.id << " Imię: " << patient.name
-                << " Nazwisko: " << patient.surname << " Pesel: " << patient.pesel << endl;
+            T obj(cellPtrs);
+            objects.push_back(obj);
             retcode = SQLFetch(hstmt);
         }
         retcode = SQLFreeStmt(hstmt, SQL_DROP);
+        return objects;
     }
     void selectFromStudies()
     {
@@ -136,7 +149,7 @@ public:
         retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
         checkError(retcode, "SQLAllocHandle(SQL_HANDLE_STMT)", hstmt, SQL_HANDLE_STMT);
 
-        string komenda = "INSERT INTO Patients (name, surname, pesel) VALUES ('"+string((char*)patient.name)+ "','" +string((char*)patient.surname)+"','"+string((char*)patient.pesel)+"');";
+        string komenda = "INSERT INTO Patients (name, surname, pesel) VALUES ('"+patient.name+ "','" +patient.surname+"','"+patient.pesel+"');";
         cout << "Komenda: " << komenda << endl;
         retcode = SQLExecDirect(hstmt, (SQLCHAR *)komenda.c_str(), SQL_NTS);
         checkError(retcode, "SQLExecDirect() INSERT", hstmt, SQL_HANDLE_STMT);
@@ -264,14 +277,17 @@ int main()
             cout << "Podaj tablicę: ";
             cin >> tablica;
             if (tablica == "Patients") {
-                db.selectFromPatients();
+                //db.selectFromPatients();
             }
             else if (tablica == "Studies") {
                 db.selectFromStudies();
             }
             else {
                 cout << "Nie podano prawidlowej tablicy więc wybrana zostaje tablica Patients" << endl;
-                db.selectFromPatients();
+                auto patients = db.getQueryResult<Patient>("select * from patients", {sizeof(Patient::id), 20, 20, 12});
+                for (const auto& patient : patients) {
+                    patient.print();
+                }
             }
         }
         else
