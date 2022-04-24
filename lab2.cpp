@@ -3,6 +3,8 @@
 #include <sqlext.h>
 #include <string.h>
 
+#define DEBUG
+
 using namespace std;
 
 #define CHECK_ERROR(code, str, h, env)  \
@@ -61,6 +63,21 @@ public:
     SQLCHAR date[20];
     SQLCHAR result[20];
 };
+
+#ifdef DEBUG
+
+void* operator new(size_t size)
+{
+    cout << "Alokacja: " << size << endl;
+    return malloc(size);
+}
+
+void operator delete(void* ptr, size_t size)
+{
+    cout << "Dealokacja: " << size << endl;
+    free(ptr);
+}
+# endif
 
 class DbManager
 {
@@ -256,7 +273,7 @@ int main()
         }
         else
         {
-            exit(0);
+            break;
         }
     }
     return 0;
