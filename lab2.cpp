@@ -72,11 +72,12 @@ void* operator new(size_t size)
     return malloc(size);
 }
 
-void operator delete(void* ptr, size_t size)
+void operator delete(void* ptr)
 {
-    cout << "Dealokacja: " << size << endl;
+    cout << "Dealokacja" << endl;
     free(ptr);
 }
+
 # endif
 
 class DbManager
