@@ -154,7 +154,7 @@ public:
             retcode = SQLFreeStmt(hstmt, SQL_DROP);
         }
         for (const auto& el : cellPtrs) {
-            delete el;
+            delete [] el;
         }
         return objects;
     }
