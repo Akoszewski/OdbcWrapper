@@ -3,6 +3,7 @@
 #include <sqlext.h>
 #include <string>
 #include <vector>
+#include <list>
 
 #define DEBUG
 
@@ -101,7 +102,7 @@ public:
     }
 
     template <typename T = DbItem>
-    vector<T> executeQuery(const string& command, const vector<size_t>& cellSizes = {})
+    list<T> executeQuery(const string& command, const vector<size_t>& cellSizes = {})
     {
         SQLLEN len;
 
@@ -119,7 +120,7 @@ public:
             checkError(retcode, "SQLBindCol()", hstmt, SQL_HANDLE_STMT);
         }
 
-        vector<T> objects;
+        list<T> objects;
         if (!cellSizes.empty()) 
         {
             retcode = SQLFetch(hstmt);
