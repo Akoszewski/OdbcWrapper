@@ -147,8 +147,7 @@ public:
             retcode = SQLFetch(hstmt);
             while (retcode != SQL_NO_DATA)
             {
-                T obj(cellPtrs);
-                objects.push_back(obj);
+                objects.emplace_back(cellPtrs);
                 retcode = SQLFetch(hstmt);
             }
             retcode = SQLFreeStmt(hstmt, SQL_DROP);
