@@ -14,7 +14,7 @@ class DbItem
 {
 public:
     DbItem() = default;
-    DbItem(const vector<unique_ptr<char[]>>& cellPtrs){}; // Czy tu powinna byc r value referencja ???
+    DbItem(const vector<unique_ptr<char[]>>& cellPtrs){};
     virtual void print() const = 0;
 };
 
@@ -154,9 +154,6 @@ public:
             }
             retcode = SQLFreeStmt(hstmt, SQL_DROP);
         }
-        // for (const auto& el : cellPtrs) {
-        //     delete [] el;
-        // }
         return objects;
     }
 private:
