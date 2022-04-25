@@ -14,7 +14,7 @@ class DbItem
 {
 public:
     DbItem() = default;
-    DbItem(const vector<unique_ptr<char[]>>& cellPtrs){};
+    DbItem(const vector<unique_ptr<char[]>>& cellPtrs){}; // Czy tu powinna byc r value referencja ???
     virtual void print() const = 0;
 };
 
