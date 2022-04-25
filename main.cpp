@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <memory>
 
 // #define DEBUG
 
@@ -13,7 +14,7 @@ class DbItem
 {
 public:
     DbItem() = default;
-    DbItem(const vector<char*>& cellPtrs){};
+    DbItem(const vector<unique_ptr<char[]>>& cellPtrs){};
     virtual void print() const = 0;
 };
 
@@ -21,10 +22,10 @@ class StringRow : public DbItem
 {
 public:
     StringRow() = default;
-    StringRow(const vector<char*>& cellPtrs)
+    StringRow(const vector<unique_ptr<char[]>>& cellPtrs)
     {
         for (const auto& cell : cellPtrs) {
-            data.push_back(cell);
+            data.push_back(cell.get());
         }
     }
     void print() const override
@@ -42,12 +43,12 @@ class Patient : public DbItem
 {
 public:
     Patient() = default;
-    Patient(const vector<char*>& cellPtrs)
+    Patient(const vector<unique_ptr<char[]>>& cellPtrs)
     {
-        id = atoi(const_cast<const char*>(cellPtrs[0]));
-        name = cellPtrs[1];
-        surname = cellPtrs[2];
-        pesel = cellPtrs[3];
+        id = atoi(const_cast<const char*>(cellPtrs[0].get()));
+        name = cellPtrs[1].get();
+        surname = cellPtrs[2].get();
+        pesel = cellPtrs[3].get();
     }
     void print() const override
     {
@@ -64,12 +65,12 @@ class Study : public DbItem
 {
 public:
     Study() = default;
-    Study(const vector<char*>& cellPtrs)
+    Study(const vector<unique_ptr<char[]>>& cellPtrs)
     {
-        patient_id = atoi(const_cast<const char*>(cellPtrs[0]));
-        type = cellPtrs[1];
-        date = cellPtrs[2];
-        result = cellPtrs[3];
+        patient_id = atoi(const_cast<const char*>(cellPtrs[0].get()));
+        type = cellPtrs[1].get();
+        date = cellPtrs[2].get();
+        result = cellPtrs[3].get();
     }
     void print() const override
     {
@@ -133,11 +134,12 @@ public:
         retcode = SQLExecDirect(hstmt, (SQLCHAR *)command.c_str(), SQL_NTS);
         checkError(retcode, "SQLExecDirect() SELECT", hstmt, SQL_HANDLE_STMT);
 
-        vector<char*> cellPtrs;
+        vector<unique_ptr<char[]>> cellPtrs;
+        cellPtrs.reserve(cellSizes.size());
         for (int i = 0; i < cellSizes.size(); ++i)
         {
-            cellPtrs.push_back(new char[cellSizes[i]]);
-            retcode = SQLBindCol(hstmt, i+1, SQL_C_CHAR, cellPtrs[i], cellSizes[i], &len);
+            cellPtrs.emplace_back(new char[cellSizes[i]]);
+            retcode = SQLBindCol(hstmt, i+1, SQL_C_CHAR, cellPtrs[i].get(), cellSizes[i], &len);
             checkError(retcode, "SQLBindCol()", hstmt, SQL_HANDLE_STMT);
         }
 
@@ -152,9 +154,9 @@ public:
             }
             retcode = SQLFreeStmt(hstmt, SQL_DROP);
         }
-        for (const auto& el : cellPtrs) {
-            delete [] el;
-        }
+        // for (const auto& el : cellPtrs) {
+        //     delete [] el;
+        // }
         return objects;
     }
 private:
