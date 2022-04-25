@@ -99,10 +99,10 @@ void operator delete(void* ptr)
 
 # endif
 
-class DbManager
+class ODBCWrap
 {
 public:
-    DbManager(string dbname)
+    ODBCWrap(string dbname)
       : henv(SQL_NULL_HENV), hdbc(SQL_NULL_HDBC), hstmt(SQL_NULL_HSTMT)
     {
         retcode = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &henv);
@@ -118,7 +118,7 @@ public:
         checkError(retcode, "SQLConnect(DATASOURCE)", hdbc, SQL_HANDLE_DBC);
     }
 
-    ~DbManager() 
+    ~ODBCWrap() 
     {
         freeResources();
     }
@@ -232,7 +232,7 @@ Study createStudy()
 
 int main()
 {
-    DbManager db("Lab1 ODBC");
+    ODBCWrap odbc("Lab1 ODBC");
 
     while (true)
     {
@@ -254,10 +254,10 @@ int main()
                 if (option == '1') {
                     Patient patient = createPatient();
                     string komenda = "INSERT INTO Patients (name, surname, pesel) VALUES ('"+patient.name+ "','" +patient.surname+"','"+patient.pesel+"');";
-                    db.executeQuery<>(komenda);
+                    odbc.executeQuery<>(komenda);
                 }
                 else if (option == '2') {
-                    auto patients = db.executeQuery<Patient>("select * from patients", {sizeof(Patient::id), 20, 20, 12});
+                    auto patients = odbc.executeQuery<Patient>("select * from patients", {sizeof(Patient::id), 20, 20, 12});
                     for (const auto& patient : patients) {
                         patient.print();
                     }
@@ -277,10 +277,10 @@ int main()
                 if (option == '1') {
                     Study study = createStudy();
                     string komenda = "INSERT INTO Studies (patient_id, type, date, result) VALUES ('"+to_string(study.patient_id)+"','"+study.type+"','"+study.date+"','"+study.result+"');";
-                    db.executeQuery<>(komenda);
+                    odbc.executeQuery<>(komenda);
                 }
                 else if (option == '2') {
-                    auto studies = db.executeQuery<Study>("select * from Studies", {sizeof(Study::patient_id), 20, 20, 20});
+                    auto studies = odbc.executeQuery<Study>("select * from Studies", {sizeof(Study::patient_id), 20, 20, 20});
                     for (const auto& study : studies) {
                         study.print();
                     }
