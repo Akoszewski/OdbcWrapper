@@ -1,3 +1,6 @@
+#ifndef ODBC_WRAP
+#define ODBC_WRAP
+
 #include <iostream>
 #include <sql.h>
 #include <sqlext.h>
@@ -6,15 +9,11 @@
 #include <list>
 #include <memory>
 
-// #define DEBUG
-
-using namespace std;
-
 class DbItem
 {
 public:
     DbItem() = default;
-    DbItem(const vector<unique_ptr<char[]>>& cellPtrs){};
+    DbItem(const std::vector<std::unique_ptr<char[]>>& cellPtrs){};
     virtual void print() const = 0;
 };
 
@@ -22,7 +21,7 @@ class StringRow : public DbItem
 {
 public:
     StringRow() = default;
-    StringRow(const vector<unique_ptr<char[]>>& cellPtrs)
+    StringRow(const std::vector<std::unique_ptr<char[]>>& cellPtrs)
     {
         for (const auto& cell : cellPtrs) {
             data.push_back(cell.get());
@@ -31,78 +30,18 @@ public:
     void print() const override
     {
         for (const auto& cell : data) {
-            cout << cell;
-            cout << " ";
+            std::cout << cell;
+            std::cout << " ";
         }
-        cout << endl;
+        std::cout << std::endl;
     }
-    vector<string> data;
+    std::vector<std::string> data;
 };
-
-class Patient : public DbItem
-{
-public:
-    Patient() = default;
-    Patient(const vector<unique_ptr<char[]>>& cellPtrs)
-    {
-        id = atoi(const_cast<const char*>(cellPtrs[0].get()));
-        name = cellPtrs[1].get();
-        surname = cellPtrs[2].get();
-        pesel = cellPtrs[3].get();
-    }
-    void print() const override
-    {
-        cout << "Id: " << id << " Imię: " << name
-            << " Nazwisko: " << surname << " Pesel: " << pesel << endl;
-    }
-    SQLSMALLINT id;
-    string name;
-    string surname;
-    string pesel;
-};
-
-class Study : public DbItem
-{
-public:
-    Study() = default;
-    Study(const vector<unique_ptr<char[]>>& cellPtrs)
-    {
-        patient_id = atoi(const_cast<const char*>(cellPtrs[0].get()));
-        type = cellPtrs[1].get();
-        date = cellPtrs[2].get();
-        result = cellPtrs[3].get();
-    }
-    void print() const override
-    {
-        cout << "Patient id: " << patient_id << " Nazwa badania: " << type
-            << " Data: " << date << " Rezultat: " << result << endl;
-    }
-   	SQLSMALLINT patient_id;
-    string type;
-    string date;
-    string result;
-};
-
-#ifdef DEBUG
-
-void* operator new(size_t size)
-{
-    cout << "Alokacja: " << size << endl;
-    return malloc(size);
-}
-
-void operator delete(void* ptr)
-{
-    cout << "Dealokacja: " << endl;
-    free(ptr);
-}
-
-# endif
 
 class ODBCWrap
 {
 public:
-    ODBCWrap(string dbname)
+    ODBCWrap(std::string dbname)
       : henv(SQL_NULL_HENV), hdbc(SQL_NULL_HDBC), hstmt(SQL_NULL_HSTMT)
     {
         retcode = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &henv);
@@ -124,7 +63,7 @@ public:
     }
 
     template <typename T = StringRow>
-    list<T> executeQuery(const string& command, const vector<size_t>& cellSizes = {})
+    std::list<T> executeQuery(const std::string& command, const std::vector<size_t>& cellSizes = {})
     {
         SQLLEN len;
 
@@ -134,7 +73,7 @@ public:
         retcode = SQLExecDirect(hstmt, (SQLCHAR *)command.c_str(), SQL_NTS);
         checkError(retcode, "SQLExecDirect() SELECT", hstmt, SQL_HANDLE_STMT);
 
-        vector<unique_ptr<char[]>> cellPtrs;
+        std::vector<std::unique_ptr<char[]>> cellPtrs;
         cellPtrs.reserve(cellSizes.size());
         for (int i = 0; i < cellSizes.size(); ++i)
         {
@@ -143,7 +82,7 @@ public:
             checkError(retcode, "SQLBindCol()", hstmt, SQL_HANDLE_STMT);
         }
 
-        list<T> objects;
+        std::list<T> objects;
         if (!cellSizes.empty())
         {
             retcode = SQLFetch(hstmt);
@@ -185,7 +124,7 @@ private:
             SQLFreeHandle(SQL_HANDLE_ENV, henv);
         }
     }
-    void extract_error(string fn, SQLHANDLE handle, SQLSMALLINT type)
+    void extract_error(std::string fn, SQLHANDLE handle, SQLSMALLINT type)
     {
         SQLINTEGER i = 0;
         SQLINTEGER native;
@@ -204,29 +143,78 @@ private:
     }
 };
 
+
+class Patient : public DbItem
+{
+public:
+    Patient() = default;
+    Patient(const std::vector<std::unique_ptr<char[]>>& cellPtrs)
+    {
+        id = atoi(const_cast<const char*>(cellPtrs[0].get()));
+        name = cellPtrs[1].get();
+        surname = cellPtrs[2].get();
+        pesel = cellPtrs[3].get();
+    }
+    void print() const override
+    {
+        std::cout << "Id: " << id << " Imię: " << name
+            << " Nazwisko: " << surname << " Pesel: " << pesel << std::endl;
+    }
+    SQLSMALLINT id;
+    std::string name;
+    std::string surname;
+    std::string pesel;
+};
+
+class Study : public DbItem
+{
+public:
+    Study() = default;
+    Study(const std::vector<std::unique_ptr<char[]>>& cellPtrs)
+    {
+        patient_id = atoi(const_cast<const char*>(cellPtrs[0].get()));
+        type = cellPtrs[1].get();
+        date = cellPtrs[2].get();
+        result = cellPtrs[3].get();
+    }
+    void print() const override
+    {
+        std::cout << "Patient id: " << patient_id << " Nazwa badania: " << type
+            << " Data: " << date << " Rezultat: " << result << std::endl;
+    }
+   	SQLSMALLINT patient_id;
+    std::string type;
+    std::string date;
+    std::string result;
+};
+
+
+# endif
+
+
 Patient createPatient()
 {
     Patient patient;
-    cout << "Podaj imię pacjenta: ";
-    cin >> patient.name;
-    cout << "Podaj nazwisko pacjenta: ";
-    cin >> patient.surname;
-    cout << "Podaj pesel pacjenta: ";
-    cin >> patient.pesel;
+    std::cout << "Podaj imię pacjenta: ";
+    std::cin >> patient.name;
+    std::cout << "Podaj nazwisko pacjenta: ";
+    std::cin >> patient.surname;
+    std::cout << "Podaj pesel pacjenta: ";
+    std::cin >> patient.pesel;
     return patient;
 }
 
 Study createStudy()
 {
     Study study;
-    cout << "Podaj id pacjenta: ";
-    cin >> study.patient_id;
-    cout << "Podaj nazwę badania: ";
-    cin >> study.type;
-    cout << "Podaj datę badania: ";
-    cin >> study.date;
-    cout << "Podaj rezultat badania: ";
-    cin >> study.result;
+    std::cout << "Podaj id pacjenta: ";
+    std::cin >> study.patient_id;
+    std::cout << "Podaj nazwę badania: ";
+    std::cin >> study.type;
+    std::cout << "Podaj datę badania: ";
+    std::cin >> study.date;
+    std::cout << "Podaj rezultat badania: ";
+    std::cin >> study.result;
     return study;
 }
 
@@ -241,19 +229,19 @@ int main()
         // for (const auto& study : tabele) {
         //     study.print();
         // }
-        cout << "\nWybierz tabele:" << endl
-            << "1 - Patients\n2 - Studies\n3 - Wyjdz" << endl;
-        cin >> tabela;
+        std::cout << "\nWybierz tabele:" << std::endl
+            << "1 - Patients\n2 - Studies\n3 - Wyjdz" << std::endl;
+        std::cin >> tabela;
         if (tabela == '1')
         {
             while (true) {
                 char option;
-                cout << "\nCo chcesz zrobic?" << endl
-                     << "1 - Insert\n2 - Select\n3 - Powrot" << endl;
-                cin >> option;
+                std::cout << "\nCo chcesz zrobic?" << std::endl
+                     << "1 - Insert\n2 - Select\n3 - Powrot" << std::endl;
+                std::cin >> option;
                 if (option == '1') {
                     Patient patient = createPatient();
-                    string komenda = "INSERT INTO Patients (name, surname, pesel) VALUES ('"+patient.name+ "','" +patient.surname+"','"+patient.pesel+"');";
+                    std::string komenda = "INSERT INTO Patients (name, surname, pesel) VALUES ('"+patient.name+ "','" +patient.surname+"','"+patient.pesel+"');";
                     odbc.executeQuery<>(komenda);
                 }
                 else if (option == '2') {
@@ -271,12 +259,12 @@ int main()
         {
             while (true) {
                 char option;
-                cout << "\nCo chcesz zrobic?" << endl
-                     << "1 - Insert\n2 - Select\n3 - Powrot" << endl;
-                cin >> option;
+                std::cout << "\nCo chcesz zrobic?" << std::endl
+                     << "1 - Insert\n2 - Select\n3 - Powrot" << std::endl;
+                std::cin >> option;
                 if (option == '1') {
                     Study study = createStudy();
-                    string komenda = "INSERT INTO Studies (patient_id, type, date, result) VALUES ('"+to_string(study.patient_id)+"','"+study.type+"','"+study.date+"','"+study.result+"');";
+                    std::string komenda = "INSERT INTO Studies (patient_id, type, date, result) VALUES ('"+std::to_string(study.patient_id)+"','"+study.type+"','"+study.date+"','"+study.result+"');";
                     odbc.executeQuery<>(komenda);
                 }
                 else if (option == '2') {
